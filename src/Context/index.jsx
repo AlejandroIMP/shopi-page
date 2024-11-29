@@ -27,15 +27,56 @@ export const ShoppingCartProvider = ({children}) => {
 
   // Fetching data
   const [items, setItems] = useState(null)
+  const [filteredItems, setFilteredItems] = useState(null)
+  
+  const [searchBy, setSearchBy] = useState(null)
+
+  const [searchByCategory, setSearchByCategory] = useState(null)
 
   useEffect(() => {
-    fetch('https://fakestoreapi.com/products?limit=20')
+    fetch('https://api.escuelajs.co/api/v1/products')
       .then(response => response.json())
       .then(data => setItems(data))
   }, [])
 
   // Get Products by title
-  const [searchBy, setSearchBy] = useState(null)
+
+  const filteredItemsByTitle = (items, searchByTitle) => {
+    return items?.filter(item => item.title.toLowerCase().includes(searchByTitle.toLowerCase()))
+  }
+  
+  // Get Products by category
+  
+  const filteredItemsByCategory = (items, searchByCategory) => {
+    return items?.filter(item => item.category.name.toLowerCase().includes(searchByCategory.toLowerCase()))
+  }
+
+  const filterBy = (searchType, items, searchByTitle, searchByCategory) => {
+    if (searchType === 'BY_TITLE') {
+      return filteredItemsByTitle(items, searchByTitle)
+    }
+
+    if (searchType === 'BY_CATEGORY') {
+      return filteredItemsByCategory(items, searchByCategory)
+    }
+
+    if (searchType === 'BY_TITLE_AND_CATEGORY') {
+      return filteredItemsByCategory(items, searchByCategory).filter(item => item.title.toLowerCase().includes(searchByTitle.toLowerCase()))
+    }
+
+    if (!searchType) {
+      return items
+    }
+  }
+
+  useEffect(() => {
+    if (searchBy && searchByCategory) setFilteredItems(filterBy('BY_TITLE_AND_CATEGORY', items, searchBy, searchByCategory))
+    if (searchBy && !searchByCategory) setFilteredItems(filterBy('BY_TITLE', items, searchBy, searchByCategory))
+    if (!searchBy && searchByCategory) setFilteredItems(filterBy('BY_CATEGORY', items, searchBy, searchByCategory))
+    if (!searchBy && !searchByCategory) setFilteredItems(filterBy(null, items, searchBy, searchByCategory))
+  },[items, searchBy, searchByCategory])
+
+
 
   return (
     <ShoppingCartContext.Provider value={{
@@ -57,6 +98,10 @@ export const ShoppingCartProvider = ({children}) => {
       setItems,
       searchBy,
       setSearchBy,
+      filteredItems,
+      setFilteredItems,
+      searchByCategory,
+      setSearchByCategory,
     }}>
       {children}
     </ShoppingCartContext.Provider>
